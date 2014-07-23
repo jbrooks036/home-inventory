@@ -1,6 +1,7 @@
 'use strict'; 
 
 // var request = require('request');
+var _ = require('lodash');
 var cItem = global.mongodb.collection('items');   // a way to talk directly to the colln 
 
 function Item(name, room, acquired, count, cost) {
@@ -13,15 +14,30 @@ function Item(name, room, acquired, count, cost) {
 
 Item.prototype.save = function(cb){
   cItem.save(this, function(err, obj) {
-    console.log(err);
-    console.log(obj);
     cb();
   });
 };
 
-Item.find = function(cb){
-  cItem.find().toArray(function(err,items){
+Item.find = function(query, cb){
+  cItem.find(query).toArray(function(err,items){
     cb(items);
+  });
+};
+
+Item.prototype.value = function(cb){
+  return this.cost * this.count;  
+};
+
+Item.value = function(query,cb){
+  Item.find(query, function(items){
+    var sum = 0;
+
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];  // modify prototype chain for instance methods
+      item = _.create(Item.prototype, item);
+      sum += item.value();
+    }
+    cb(sum);
   });
 };
 
